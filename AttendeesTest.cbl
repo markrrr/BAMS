@@ -13,7 +13,7 @@ working-storage section.
     copy Attendee replacing Attendee by AttendeeExpected.
     copy Attendee replacing Attendee by AttendeeReturned.
 
-    01 AttendeesFileName pic x(20) value spaces.
+    01 AttendeesFileName pic x(20) value "attendees-test.dat".
     01 SourceFileName pic x(20) value spaces.
 
     01 AttendeesToArriveReturned pic 999 value zero.
@@ -30,16 +30,14 @@ procedure division.
 
 SetupInitialData.
     initialize AttendeeExpected
-    call "Attendees"
     .
 
 InitialiseAttendeesFile.
     call "C$COPY" using "test-data.dat", "attendees-test.dat", 0
-    call "SetAttendeesFileName" using "attendees-test.dat"
     .
 
 TestListAttendees.
-    call "ListAttendees"
+    call "DisplayListOfAttendees" using by content AttendeesFileName
     .
 
 TestImportedRecordExists.
@@ -59,7 +57,8 @@ TestImportedRecordExists.
 
     *> When
     call "GetAttendeeByAuthCode"
-        using by content Authcode of AttendeeExpected,
+        using by content AttendeesFileName,
+        by content AuthCode of AttendeeExpected,
         by reference AttendeeReturned
 
     *> Then
@@ -70,14 +69,19 @@ TestImportedRecordExists.
 TestShouldUpdateAttendeeDetails.
     *> Given
     call "GetAttendeeByAuthCode"
-        using by reference "EF1234",
+        using by content AttendeesFileName,
+        by content "EF1234",
         by reference AttendeeReturned
+
     move "Cover Broken" to Name of AttendeeReturned
-    call "UpdateAttendee" using by content AttendeeReturned
+    call "UpdateAttendee"
+        using by content AttendeesFileName,
+        by content AttendeeReturned
 
     *> When
     call "GetAttendeeByAuthCode"
-        using by reference AuthCode of AttendeeExpected,
+        using by content AttendeesFileName,
+        by content AuthCode of AttendeeExpected,
         by reference AttendeeReturned
 
     *> Then
@@ -94,11 +98,15 @@ TestCanAddAttendee.
     set ArrivalDayIsWednesday of AttendeeExpected to true
     move createAuthCode() to AuthCode of AttendeeExpected
     set AttendeeComing of AttendeeExpected to true
-    call "AddAttendee" using by content AttendeeExpected
+
+    call "AddAttendee"
+        using by content AttendeesFileName,
+        by content AttendeeExpected
 
     *> When
     call "GetAttendeeByAuthCode"
-        using by reference AuthCode of AttendeeExpected,
+        using by content AttendeesFileName,
+        by content AuthCode of AttendeeExpected,
         by reference AttendeeReturned
 
     *> Then
@@ -109,14 +117,18 @@ TestCanAddAttendee.
 TestAttendeeStats.
     *> Given
     call "GetAttendeeByAuthCode"
-        using by reference "CDEF12",
+        using by content AttendeesFileName,
+        by content "CDEF12",
         by reference AttendeeReturned
     set AttendeeArrived of AttendeeReturned to true
-    call "UpdateAttendee" using by content AttendeeReturned
+    call "UpdateAttendee"
+        using by content AttendeesFileName,
+        by content AttendeeReturned
 
     *> When
-    call "AttendeeStats"
-        using by reference
+    call "GetAttendeeStats"
+        using by content AttendeesFileName,
+        by reference
             NumberOfAttendeesReturned, AttendeesOnSiteReturned, AttendeesToArriveReturned,
             NumberOfKidsOnSiteReturned, NumberOfKidsToArriveReturned
 
@@ -138,8 +150,9 @@ TestAttendeeStats.
 
 TestFetchAttendeesToArriveOnDay.
     *> Given/When
-    call "AttendeesToArriveOnDay"
-        using by content "Wed"
+    call "GetAttendeesToArriveOnDay"
+        using by content AttendeesFileName,
+        by content "Wed"
         by reference AttendeesToArriveReturned, NumberOfKidsToArriveReturned
 
     *> Then
@@ -150,8 +163,9 @@ TestFetchAttendeesToArriveOnDay.
         by content "TestFetchAttendeesToArriveOnDay: Correct number of kids returned for Wednesday arrivals"
 
     *> Given/When
-    call "AttendeesToArriveOnDay"
-        using by content "Fri"
+    call "GetAttendeesToArriveOnDay"
+        using by content AttendeesFileName,
+        by content "Fri"
         by reference AttendeesToArriveReturned, NumberOfKidsToArriveReturned
 
     *> Then
@@ -164,7 +178,9 @@ TestFetchAttendeesToArriveOnDay.
 
 TestCanFetchTotalOfMoney.
     *> Given/When
-    call "FinancialStats" using by reference TotalPaidReturned, TotalToPayReturned
+    call "GetFinancialStats"
+        using by content AttendeesFileName,
+        by reference TotalPaidReturned, TotalToPayReturned
 
     *> Then
     call "AssertEquals" using by content TotalPaidReturned by content 50
@@ -176,7 +192,7 @@ TestCanFetchTotalOfMoney.
     .
 
 EndTests.
-    call "ListAttendees"
+    call "DisplayListOfAttendees" using by content AttendeesFileName
     stop run.
 
 end program AttendeesTest.

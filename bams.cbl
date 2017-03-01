@@ -30,7 +30,7 @@ working-storage section.
     01 AddAttendeeFlag pic 9 value 0.
         88 AddAttendeeFlagOn value 1 when set to false is 0.
 
-    01 AttendeesFileName pic x(20) value spaces.
+    01 AttendeesFileName pic x(20) value "attendees.dat".
 
     01 BarnCampStats.
         02 PeopleOnSite pic 999 value zero.
@@ -163,8 +163,6 @@ Initialisation section.
     else
         move "attendees.dat" to AttendeesFileName
     end-if
-    call "Attendees"
-    call "SetAttendeesFileName" using AttendeesFileName
 
     set environment 'COB_SCREEN_EXCEPTIONS' to 'Y'
     set environment 'COB_SCREEN_ESC' to 'Y'
@@ -172,11 +170,17 @@ Initialisation section.
 
 Main section.
     perform until OperationIsExit
-        call "AttendeeStats" using by reference PeopleSignedUp, PeopleOnSite, PeopleToArrive, KidsOnSite, KidsToArrive
+        call "GetAttendeeStats"
+            using by content AttendeesFileName,
+            by reference PeopleSignedUp, PeopleOnSite, PeopleToArrive, KidsOnSite, KidsToArrive
         add PeopleToArrive to PeopleOnSite giving TotalEstimatedAttendees
         add KidsToArrive to KidsOnSite giving TotalEstimatedKids
+
         accept CurrentDayOfWeek from day-of-week
-        call "AttendeesToArriveOnDay" using content DayOfTheWeek(CurrentDayOfWeek) by reference PeopleToArriveToday, KidsToArriveToday
+        call "GetAttendeesToArriveOnDay"
+            using by content AttendeesFileName,
+            by content DayOfTheWeek(CurrentDayOfWeek),
+            by reference PeopleToArriveToday, KidsToArriveToday
         accept HomeScreen from crt end-accept
         evaluate true
             when OperationIsView perform ViewAttendee
@@ -199,8 +203,10 @@ SearchAttendee section.
 ViewAttendee section.
     initialize Attendee
     perform SearchAttendee
+
     call "GetAttendeeByAuthCode"
-        using by content Authcode of Attendee,
+        using by content AttendeesFileName,
+        by content Authcode of Attendee,
         by reference Attendee
 
     if Name of Attendee is equal to high-values or AuthCode is not HexNumber then
@@ -221,8 +227,8 @@ EditAttendee section.
         evaluate true
             when OperationIsSave
                 evaluate true
-                    when AddAttendeeFlagOn call "AddAttendee" using by content Attendee
-                    when not AddAttendeeFlagOn call "UpdateAttendee" using by content Attendee
+                    when AddAttendeeFlagOn call "AddAttendee" using by content AttendeesFileName, Attendee
+                    when not AddAttendeeFlagOn call "UpdateAttendee" using by content AttendeesFileName, Attendee
                 end-evaluate
             when OperationIsTogglePaid
                 evaluate true
