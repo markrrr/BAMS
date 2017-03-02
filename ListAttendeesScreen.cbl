@@ -1,10 +1,7 @@
->>DEFINE CONSTANT F10 AS 1010
->>DEFINE CONSTANT PGUP AS 2001
->>DEFINE CONSTANT PGDN AS 2002
->>DEFINE CONSTANT ENTER AS 0000
+copy crt-key-codes.
 
 identification division.
-program-id. AttendeesList is initial.
+program-id. ListAttendeesScreen is initial.
 
 environment division.
 configuration section.
@@ -128,4 +125,4 @@ procedure division using ReturnAuthCode.
 
     goback.
 
-end program AttendeesList.
+end program ListAttendeesScreen.
